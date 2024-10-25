@@ -1,6 +1,7 @@
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Scanner;
+import java.nio.file.Paths;
 import java.io.*;
 
 /**
@@ -202,22 +203,28 @@ class UCS {
     }
 }
 
-class ReadFromFile{
+class ReadFromFile {
+    private Graph graph;
+    private String filePath;
 
-    private Graph graph; 
-    public ReadFromFile(Graph graph) {
+    // Constructor that initializes the graph and the file path
+    public ReadFromFile(Graph graph, String filePath) {
         this.graph = graph;
+        this.filePath = filePath;
     }
-   
+
+    // Method to read data from the file and add edges to the graph
     public void readFile() {
         try {
-            FileInputStream fis = new FileInputStream("C:\\Users\\Admin\\Desktop\\Cities-Graph\\Road_Cities.txt");
+            FileInputStream fis = new FileInputStream(filePath);
             BufferedReader bis = new BufferedReader(new InputStreamReader(fis));
-            String i ;
+            String line;
 
-            while ((i = bis.readLine()) != null) {
-                String[] parts = i.split(" ");
+            // Read each line from the file
+            while ((line = bis.readLine()) != null) {
+                String[] parts = line.split(" ");
                 
+                // If line contains exactly three parts, interpret it as city1, city2, and distance
                 if (parts.length == 3) {
                     String city1 = parts[0];
                     String city2 = parts[1];
@@ -227,66 +234,43 @@ class ReadFromFile{
             }
             bis.close();
             fis.close();
-        } 
-        catch (Exception e) {
-            System.out.println(e);
+        } catch (Exception e) {
+            System.out.println("Error reading file: " + e.getMessage());
         }
     }
 }
+
 /**
  * The main class that manages the input of cities and edges from the user,
  * builds the graph, and then runs the UCS algorithm to find the shortest path.
  */
 public class CityGraph {
     public static void main(String[] args) {
-        // Create a scanner to receive user input for city connections
+        Graph graph = new Graph();
         Scanner scanner = new Scanner(System.in);
-        Graph graph = new Graph(); // Create a new graph to store cities and edges
 
-        System.out.println("Enter city connections or type 'exit' to stop:");
+        // Prompt the user for the input file path
+        System.out.println("Enter the file path for the input file (or press Enter to use the default file):");
+        String inputPath = scanner.nextLine().trim();
 
-        // Loop to receive input of city connections until 'exit' is entered
-        while (true) {
-            String input = scanner.nextLine();
-
-            // Exit the loop if the user types "exit"
-            if (input.equalsIgnoreCase("exit")) {
-                break;
-            }
-
-            // Parse the input to extract city1, city2, and distance
-            String[] parts = input.split(" ");
-            if (parts.length != 3) {
-                System.out.println("Invalid input. Please enter in format: city1 city2 distance");
-                continue;
-            }
-
-            String city1 = parts[0];
-            String city2 = parts[1];
-            int distance;
-
-            // Convert the distance to an integer and check for input validity
-            try {
-                distance = Integer.parseInt(parts[2]);
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid distance. Please enter a valid number for distance.");
-                continue;
-            }
-
-            // Add the edge to the graph, checking for duplicate edges
-            try {
-                graph.addEdge(city1, city2, distance);
-                System.out.println("Edge added: " + city1 + " - " + city2 + " (" + distance + " km)");
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
+        // If the input is empty, use the default file in the program's directory
+        if (inputPath.isEmpty()) {
+            inputPath = Paths.get("../Road_Cities.txt").toAbsolutePath().toString(); // Default file in main repo directory
+        } else {
+            // Remove leading and trailing quotation marks if present
+            if (inputPath.startsWith("\"") && inputPath.endsWith("\"")) {
+                inputPath = inputPath.substring(1, inputPath.length() - 1);
             }
         }
 
-        // After all cities and edges have been added, run UCS to find the shortest path
-        System.out.println("Cities and Edges added Successfully");
-        scanner.close();
+        // Read data from the specified file and build the graph
+        ReadFromFile readFromFile = new ReadFromFile(graph, inputPath);
+        readFromFile.readFile();
 
-        UCS ucs = new UCS(graph); // Create a UCS instance with the constructed graph
-        ucs.runUCS();             // Run UCS to get user input for start and goal cities
+        System.out.println("Cities and Edges added Successfully");
+
+        UCS ucs = new UCS(graph);
+        ucs.runUCS();
+        scanner.close();
     }
 }
